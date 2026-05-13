@@ -7,7 +7,7 @@
 GitHub Pages前提の純粋な静的サイトなので、ローカルでは任意の静的サーバーで開けばOK。
 
 ```sh
-cd setagaya-ibasho
+cd ibasho-chatbot
 python3 -m http.server 8080
 # → http://localhost:8080
 ```
