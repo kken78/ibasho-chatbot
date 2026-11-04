@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!-- Decidim 0.32.2 の外枠（layouts/decidim/_application, _wrapper, header/_main, header/_menu）と
+     Awesome iframe コンポーネント（iframe/show）の構造を写したテスト用ページ。
+     ?css=0 で「カスタムスタイルなし」、?app= で埋め込むURLを変更 -->
+<html lang="ja" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>居場所さがし - 子ども・若者のページ（0.32構造の再現）</title>
+<style>
+  /* Decidim本体の見た目の近似（高さ・色だけ） */
+  body { margin: 0; font-family: sans-serif; }
+  .layout-container__skip { position: absolute; left: -9999px; }
+  #header-container { background: #fff; border-bottom: 1px solid #e6e6e6; }
+  .main-bar { height: 72px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+  .menu-bar { background: #0b6e6c; color: #fff; padding: 10px 16px; font-size: 13px; }
+  .participatory-space__container { padding: 24px 16px; }
+  footer[role=contentinfo] { background: #3a3a3a; color: #fff; padding: 40px 16px; min-height: 320px; }
+  #floating-helper-tip { position: fixed; right: 12px; bottom: 90px; background: #fff; border: 1px solid #999; padding: 4px 8px; }
+  .cookies__container { position: fixed; bottom: 0; z-index: 100; background: #fff; width: 100%; box-shadow: 0 -4px 6px rgba(211,211,211,.25); padding: 16px; box-sizing: border-box; font-size: 13px; }
+  /* Awesome iframe.scss */
+  .participatory-space__container .awesome-iframe { margin: 0 auto; }
+  .participatory-space__container .awesome-iframe iframe { display: block; margin: auto; }
+</style>
+<link id="awesome-scoped" rel="stylesheet" href="awesome-scoped.css">
+</head>
+<body class="text-black text-md form-defaults">
+  <a class="layout-container__skip" href="#content">メインコンテンツへ移動</a>
+  <div id="dc-dialog-wrapper" class="cookies__container" role="region" hidden>
+    このサイトはCookieを使用します。 <button type="button" onclick="this.parentNode.hidden=true">すべて受け入れる</button>
+  </div>
+  <div class="layout-container">
+    <header role="banner">
+      <div id="header-container">
+        <div id="main-bar" class="main-bar__container">
+          <div class="main-bar"><div class="main-bar__logo"><b>世田谷区 子ども・若者のページ</b></div><div class="main-bar__menu-mobile">≡</div></div>
+        </div>
+      </div>
+      <div id="menu-bar-container">
+        <div id="menu-bar" class="menu-bar__container"><div class="menu-bar"><nav class="menu-bar__breadcrumb-mobile">子どもの居場所マップ / 居場所さがし</nav></div></div>
+      </div>
+    </header>
+    <div id="content" data-content>
+      <main class="participatory-space__container">
+        <section id="html-block-html" class="awesome-iframe layout-main__section">
+          <iframe id="app-frame" title="居場所さがし" width="100%" height="700" frameborder="0" allow="geolocation; clipboard-write; web-share" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation allow-forms" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        </section>
+      </main>
+    </div>
+    <footer role="contentinfo"><p>フッター（サイトの説明・リンク）</p></footer>
+  </div>
+  <div id="floating-helper-tip"><button type="button">ヘルプ</button></div>
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('css') === '0') document.getElementById('awesome-scoped').remove();
+  if (q.get('cookie') === '1') document.getElementById('dc-dialog-wrapper').hidden = false;
+  document.getElementById('app-frame').src = q.get('app') || 'http://localhost:8081/';
+</script>
+</body>
+</html>

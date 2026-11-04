@@ -1,0 +1,44 @@
+/* 居場所さがし（完全版試作）：この取り組みのアンケートのページを、アプリと同じヘッダー・下メニューにする
+   適用範囲：取り組み ibasho-trial ＋ コンポーネントの種類「調査」
+   ヘッダー・メニューの中身は、各アンケートコンポーネントの「お知らせ」に入れたHTML（.ibasho-shell） */
+.layout-container > header,
+.layout-container > footer,
+#floating-helper-tip { display: none !important; }
+body { padding-top: 56px; padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+
+/* お知らせ枠そのものは見せない（中のナビだけ固定表示） */
+.layout-main__section:has(.ibasho-shell),
+.layout-main__section:has(.ibasho-shell) > * { border: 0 !important; padding: 0 !important; margin: 0 !important; background: none !important; min-height: 0 !important; }
+.ibasho-shell p { margin: 0; }
+
+/* 上：アプリと同じヘッダー */
+.ibasho-top { position: fixed; top: 0; left: 0; right: 0; height: 56px; z-index: 50; background: #fff;
+  border-bottom: 1px solid #dde8e6; display: flex; align-items: center; padding: 0 16px; }
+.ibasho-brand { display: flex; align-items: center; gap: 8px; color: #0b6e6c !important; font-weight: 700; font-size: 19px; text-decoration: none !important; }
+.ibasho-brand::before { content: ""; width: 26px; height: 26px; background: #0b6e6c; -webkit-mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a7 7 0 00-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a7 7 0 00-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z'/%3E%3C/svg%3E") center/contain no-repeat; }
+
+/* 下：アプリと同じメニュー */
+.ibasho-tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; background: #fff; border-top: 1px solid #dde8e6;
+  padding-bottom: env(safe-area-inset-bottom); }
+.ibasho-tabbar ul { list-style: none; margin: 0 !important; padding: 0 !important; height: 64px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.ibasho-tabbar li { margin: 0 !important; padding: 0 !important; list-style: none; }
+.ibasho-tabbar li::before, .ibasho-tabbar li::marker { content: none !important; }
+.ibasho-tabbar a { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-size: 11px; color: #4f6463 !important; text-decoration: none !important; }
+.ibasho-tabbar a::before { content: ""; width: 22px; height: 22px; background: currentColor; -webkit-mask: var(--ico) center/contain no-repeat; mask: var(--ico) center/contain no-repeat; }
+.ibasho-tabbar a[aria-current] { color: #0b6e6c !important; font-weight: 700; }
+.ibasho-tabbar .t-top { --ico: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z'/%3E%3C/svg%3E"); }
+.ibasho-tabbar .t-chat { --ico: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a8 8 0 01-11.6 7.1L4 21l1.9-5.4A8 8 0 1121 12z'/%3E%3C/svg%3E"); }
+.ibasho-tabbar .t-list { --ico: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01'/%3E%3C/svg%3E"); }
+.ibasho-tabbar .t-map { --ico: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14'/%3E%3C/svg%3E"); }
+.ibasho-tabbar .t-idea { --ico: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9V16h7v-2.1A6 6 0 0012 3z'/%3E%3C/svg%3E"); }
+
+/* パソコン：アプリと同じく、メニューはヘッダーの右に文字で並べる */
+@media (min-width: 900px) {
+  body { padding-bottom: 0; }
+  .ibasho-tabbar { top: 0; bottom: auto; left: auto; right: 16px; height: 56px; border: 0; background: transparent; }
+  .ibasho-tabbar ul { height: 56px; display: flex; gap: 20px; align-items: center; }
+  .ibasho-tabbar a { flex-direction: row; font-size: 14px; color: #0b6e6c !important; }
+  .ibasho-tabbar a::before { display: none; }
+  .ibasho-tabbar a[aria-current] { text-decoration: underline !important; text-underline-offset: 6px; }
+}

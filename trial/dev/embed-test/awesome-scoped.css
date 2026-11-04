@@ -1,0 +1,19 @@
+/*
+ * 居場所さがし：Decidim Awesome「カスタムスタイル」に貼るCSS
+ * 適用範囲：取り組み「子どもの居場所マップ」の iframe コンポーネントだけ（Awesomeの制限で指定）
+ * 対象：Decidim 0.30.x / 0.32.x 共通の外枠（.layout-container > header / footer）
+ */
+html, body { height: 100%; overflow: hidden; }
+
+/* Decidimのヘッダー（メニューバー含む）・フッター・ヘルプボタンを隠す */
+.layout-container > header,
+.layout-container > footer,
+#floating-helper-tip { display: none !important; }
+
+/* 枠を画面いっぱいに固定（親の余白や幅の指定に左右されない） */
+.awesome-iframe iframe {
+  position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh; height: 100dvh;
+  max-width: none; border: 0; margin: 0;
+  z-index: 10; /* Cookie同意（z-index:100）より下 */
+}
