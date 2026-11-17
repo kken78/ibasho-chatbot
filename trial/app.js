@@ -53,15 +53,9 @@ function toast(text) {
 
 // ---------- 状態 ----------
 const state = {
-  saved: new Set(store.get('ibasho.saved', [])),
-  filter: { kind: '', area: '', teen: false, saved: false, q: '', ids: null },
+  filter: { kind: '', area: '', teen: false, q: '', ids: null },
   furigana: store.get('ibasho.furigana', false),
 };
-function toggleSave(id) {
-  if (state.saved.has(id)) { state.saved.delete(id); toast('ほぞんをやめたよ'); }
-  else { state.saved.add(id); toast('ほぞんしたよ'); }
-  store.set('ibasho.saved', [...state.saved]);
-}
 
 // ---------- 枠の外（Decidim）へのリンク ----------
 function outerLink(url, label, cls) {
@@ -71,7 +65,6 @@ function outerLink(url, label, cls) {
 }
 
 // ---------- 共通部品 ----------
-const SAVE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
 function cardHtml(p, opts = {}) {
   const meta = [p.cat, p.teen ? '中高生も' : ''].filter(Boolean).join('・');
   return `<div class="card${opts.active ? ' active' : ''}" data-id="${p.id}">
@@ -80,14 +73,7 @@ function cardHtml(p, opts = {}) {
       <span class="name">${esc(p.name)}</span>
       <span class="addr">${esc(p.shortAddr)}</span>
     </a>
-    <button type="button" class="save-btn" data-save="${p.id}" aria-label="ほぞんする" aria-pressed="${state.saved.has(p.id)}">${SAVE_ICON}</button>
   </div>`;
-}
-function bindSaveButtons(root) {
-  root.querySelectorAll('[data-save]').forEach(b => b.onclick = () => {
-    const id = Number(b.dataset.save); toggleSave(id);
-    b.setAttribute('aria-pressed', state.saved.has(id));
-  });
 }
 
 // ---------- ルーティング ----------
@@ -150,7 +136,7 @@ function renderTop() {
     </section>
     <footer class="app-footer">
       ${outerLink(LINK.apply, '居場所を運営している方へ（掲載のお申し込み）', '')}
-      ${outerLink(LINK.site, '子ども・若者のページへ', '')}
+      ${outerLink(LINK.site, '子どもの居場所マップのページへ', '')}
       <span>情報：世田谷区（試作のため、現行の52件を表示しています）。最新の状況は各施設にお問い合わせください。</span>
     </footer>
   </div>`;
@@ -190,7 +176,6 @@ function drawChat() {
     box.appendChild(b);
   });
   view.querySelector('#restart').onclick = () => { Object.assign(chat, { log: [], choices: null, ans: {}, started: false }); renderChat(); };
-  bindSaveButtons(view);
   view.scrollTop = view.scrollHeight;
 }
 function askKind(again) {
@@ -235,7 +220,7 @@ function filtered() {
   const f = state.filter;
   let list = PLACES_V.filter(p =>
     (!f.ids || f.ids.includes(p.id)) && (!f.kind || p.kind === f.kind) && (!f.area || p.area === f.area) &&
-    (!f.teen || p.teen) && (!f.saved || state.saved.has(p.id)) &&
+    (!f.teen || p.teen) &&
     (!f.q || (p.name + p.addr + p.cat).includes(f.q)));
   list.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
   return list;
@@ -249,7 +234,6 @@ function filtersHtml(withSearch) {
       ${f.ids ? `<button type="button" class="f-chip" aria-pressed="true" data-clear-ids>さがした結果 ×</button>` : ''}
       ${Object.entries(KINDS).map(([k, v]) => `<button type="button" class="f-chip k-${k}" data-kind="${k}" aria-pressed="${f.kind === k}">${esc(v.label)}${countKind(k) ? '' : '（これから）'}</button>`).join('')}
       <button type="button" class="f-chip" data-teen aria-pressed="${f.teen}">中高生向け</button>
-      <button type="button" class="f-chip" data-saved aria-pressed="${f.saved}">ほぞんした場所</button>
     </div>
     <div class="selects">
       <select id="area" aria-label="地域"><option value="">地域：すべて</option>${AREAS.map(a => `<option ${f.area === a ? 'selected' : ''}>${a}</option>`).join('')}</select>
@@ -262,7 +246,6 @@ function bindFilters(root, rerender) {
   const f = state.filter;
   root.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => { f.kind = f.kind === b.dataset.kind ? '' : b.dataset.kind; rerender(); });
   const t = root.querySelector('[data-teen]'); if (t) t.onclick = () => { f.teen = !f.teen; rerender(); };
-  const s = root.querySelector('[data-saved]'); if (s) s.onclick = () => { f.saved = !f.saved; rerender(); };
   const c = root.querySelector('[data-clear-ids]'); if (c) c.onclick = () => { f.ids = null; rerender(); };
   root.querySelector('#area').onchange = e => { f.area = e.target.value; rerender(); };
   const q = root.querySelector('#q');
@@ -274,7 +257,6 @@ function drawListItems(root, activeId) {
   const box = root.querySelector('.list');
   box.innerHTML = list.length ? list.map(p => cardHtml(p, { active: p.id === activeId })).join('')
     : `<p class="empty-note">${state.filter.kind && !countKind(state.filter.kind) ? 'この分類の居場所は、これから載せる予定です。' : '条件に合う居場所がありません。条件をゆるめてみてね。'}</p>`;
-  bindSaveButtons(box);
   return list;
 }
 function renderList() {
@@ -333,7 +315,6 @@ function renderMap() {
     api.select(id);
     card.hidden = false;
     card.innerHTML = cardHtml(byId(id)) + `<a class="go" href="#/place/${id}">くわしく見る</a>`;
-    bindSaveButtons(card);
   });
   currentMap = api.map;
 }
@@ -356,7 +337,7 @@ function renderDetail(id) {
   if (!p) { view.innerHTML = '<div class="wrap detail"><p>見つかりませんでした。</p><a class="back" href="#/list">一覧へ</a></div>'; return; }
   const url = safeUrl(p.url);
   view.innerHTML = `<div class="wrap detail">
-    <a class="back" href="#/list" id="back">← もどる</a>
+    <a class="back" href="#/list" id="back">← 前の画面にもどる</a>
     <div><span class="chip ${p.kind}">${esc(KINDS[p.kind].label)}</span> <span class="small muted">${esc(p.cat)}</span></div>
     <h1>${esc(p.name)}</h1>
     <p class="lead">${esc(p.desc)}</p>
@@ -370,7 +351,6 @@ function renderDetail(id) {
     <div class="mini" id="mini" role="img" aria-label="${esc(p.name)}の場所"></div>
     <div class="btn-row">
       <a class="btn outline" href="https://www.google.com/maps/dir/?api=1&amp;destination=${p.lat},${p.lng}" target="_blank" rel="noopener">行き方を調べる ↗</a>
-      <button type="button" class="btn outline" id="save" aria-pressed="${state.saved.has(p.id)}">${state.saved.has(p.id) ? 'ほぞんずみ' : 'ほぞんする'}</button>
     </div>
     <button type="button" class="btn soft" id="share">この居場所をシェアする</button>
     <div class="divider">
@@ -384,12 +364,7 @@ function renderDetail(id) {
       <span class="small muted" style="text-align:center">送った内容は公開されません。区が確認します。</span>
     </div>
   </div>`;
-  bindSaveButtons(view);
   view.querySelector('#back').onclick = e => { if (history.length > 1) { e.preventDefault(); history.back(); } };
-  view.querySelector('#save').onclick = e => {
-    toggleSave(p.id); e.target.setAttribute('aria-pressed', state.saved.has(p.id));
-    e.target.textContent = state.saved.has(p.id) ? 'ほぞんずみ' : 'ほぞんする';
-  };
   view.querySelector('#share').onclick = async () => {
     const base = safeUrl(CFG.appUrl) || (location.origin + location.pathname);
     const shareUrl = `${base}#/place/${p.id}`;
@@ -476,6 +451,9 @@ async function resolveParent() {
 
 (async function init() {
   const ref = await resolveParent();
+  // ヘッダーの戻るリンク：埋め込み元の取り組みのページ（おとな向けの入口）へ。単独で開いたときは出さない
+  const lpBack = document.getElementById('lp-back');
+  if (lpBack && safeUrl(LINK.site)) { lpBack.href = LINK.site; lpBack.hidden = false; }
   // アイデア箱：Decidimのアンケートがあれば、メニューから直接そこへ（枠の外）
   if (LINK.idea) document.querySelectorAll('[data-tab="idea"], [data-nav="idea"]').forEach(a => { a.href = LINK.idea; a.target = '_top'; });
   // Decidim側のページのメニューから来たとき：親ページのURLの ?tab= で最初の画面を決める
