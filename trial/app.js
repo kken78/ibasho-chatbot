@@ -38,13 +38,9 @@ const countKind = k => PLACES_V.filter(p => p.kind === k).length;
 
 // ---------- 小さな道具 ----------
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-// 固定の文言だけに使う：{漢字|かな} → <ruby>
-const R = s => esc(s).replace(/\{([^|}]+)\|([^}]+)\}/g, '<ruby>$1<rt>$2</rt></ruby>');
+// 固定の文言だけに使う：{漢字|かな} → 漢字（読みは文言の中に残しておく）
+const R = s => esc(s).replace(/\{([^|}]+)\|([^}]+)\}/g, '$1');
 const safeUrl = u => /^https:\/\//.test(String(u || '')) ? String(u) : '';
-const store = {
-  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* 保存できない環境では無視 */ } },
-};
 function toast(text) {
   const t = document.createElement('div');
   t.className = 'toast'; t.textContent = text; t.setAttribute('role', 'status');
@@ -54,7 +50,6 @@ function toast(text) {
 // ---------- 状態 ----------
 const state = {
   filter: { kind: '', area: '', teen: false, q: '', ids: null },
-  furigana: store.get('ibasho.furigana', false),
 };
 
 // ---------- 枠の外（Decidim）へのリンク ----------
@@ -132,7 +127,7 @@ function renderTop() {
     </section>
     <section class="section">
       <a class="banner idea" href="#/idea"><b>${R('{居場所|いばしょ}のアイデア{箱|ばこ}')}</b><span>${R('「こんな{場所|ばしょ}があったらいいな」を{区|く}に{送|おく}ろう')}</span></a>
-      <a class="banner help" href="#/help"><b>${R('つらいとき・{相談|そうだん}したいとき')}</b><span>${R('{話|はなし}を{聞|き}いてくれる{窓口|まどぐち}があるよ')}</span></a>
+      <a class="banner help" href="#/help"><b>${R('つらいとき・{相談|そうだん}したいとき')}</b><span>${R('{相談|そうだん}できる{窓口|まどぐち}の{案内|あんない}')}</span></a>
     </section>
     <footer class="app-footer">
       ${outerLink(LINK.apply, '居場所を運営している方へ（掲載のお申し込み）', '')}
@@ -198,14 +193,14 @@ function askWhere() {
 function showResult() {
   const { kind, area, age } = chat.ans;
   let list = PLACES_V.filter(p => (!kind || p.kind === kind) && (!area || p.area === area));
-  const score = p => (age && age.teen && p.teen ? 3 : 0) + (p.cat === '青少年交流センター' && age && age.teen ? 2 : 0);
-  list.sort((a, b) => score(b) - score(a));
+  const teenFirst = !!(age && age.teen);
+  if (teenFirst) list.sort((a, b) => (b.teen ? 1 : 0) - (a.teen ? 1 : 0));
   const top = list.slice(0, 5);
   if (!top.length) {
     say('ぴったりの{場所|ばしょ}が{見|み}つからなかった…{地域|ちいき}を{変|か}えてみる？');
     return ask([{ label: '地域を変える', onClick: askWhere }]);
   }
-  say(`${list.length}か{所|しょ}{見|み}つかったよ。${list.length > 5 ? 'おすすめ{順|じゅん}に5つ{出|だ}すね。' : ''}`);
+  say(`${list.length}か{所|しょ}{見|み}つかったよ。${list.length > 5 ? (teenFirst ? '{中高生|ちゅうこうせい}も{使|つか}える{場所|ばしょ}から5つ{出|だ}すね。' : 'はじめの5つを{出|だ}すね。') : ''}`);
   chat.log.push({ type: 'cards', ids: top.map(p => p.id) });
   const ids = list.map(p => p.id);
   ask([
@@ -344,20 +339,12 @@ function renderDetail(id) {
     <dl>
       <dt>いつ</dt><dd>${url ? '開いている日・時間は施設のページで確認してね' : '開いている日・時間は施設にお問い合わせください'}</dd>
       <dt>どこ</dt><dd>${esc(p.shortAddr)}（${esc(p.area)}）</dd>
-      <dt>だれが</dt><dd>${p.teen ? '子ども・中高生' : '子ども'}</dd>
+      <dt>だれが</dt><dd>${url ? '施設のページで確認してね' : '施設にお問い合わせください'}</dd>
       <dt>いくら</dt><dd>${(p.tags || []).includes('無料') ? '無料' : '施設にお問い合わせください'}</dd>
       ${url ? `<dt>案内</dt><dd><a href="${esc(url)}" target="_blank" rel="noopener">施設のページ ↗</a></dd>` : ''}
     </dl>
     <div class="mini" id="mini" role="img" aria-label="${esc(p.name)}の場所"></div>
-    <div class="btn-row">
-      <a class="btn outline" href="https://www.google.com/maps/dir/?api=1&amp;destination=${p.lat},${p.lng}" target="_blank" rel="noopener">行き方を調べる ↗</a>
-    </div>
     <button type="button" class="btn soft" id="share">この居場所をシェアする</button>
-    <div class="divider">
-      <h2>にた居場所</h2>
-      <div style="display:flex;flex-direction:column;gap:8px">${PLACES_V.filter(x => x.kind === p.kind && x.area === p.area && x.id !== p.id).slice(0, 2).map(x => cardHtml(x)).join('') || '<span class="small muted">同じ地域にはまだありません</span>'}</div>
-      <a href="#/chat" style="font-size:13.5px;font-weight:700">チャットでほかの場所をさがす</a>
-    </div>
     <div class="divider">
       <span class="small muted">情報元：世田谷区。最新の状況は施設にお問い合わせください。</span>
       <div class="btn-row">${outerLink(LINK.feedback, '感想を送る', 'btn soft')}${outerLink(LINK.feedback, 'まちがいを教える', 'btn soft')}</div>
@@ -388,11 +375,8 @@ function renderIdea() {
     <h1>${R('{居場所|いばしょ}のアイデア{箱|ばこ}')}</h1>
     <p>${R('「こんな{場所|ばしょ}があったらいいな」「ここがこうなったらいいな」を{区|く}に{送|おく}ってね。{名前|なまえ}や{住所|じゅうしょ}は{書|か}かないでね。')}</p>
     ${outerLink(LINK.idea, 'アイデアを送る', 'btn primary')}
-    <p class="small muted">送ったアイデアは区が読んで、居場所づくりに使います。一つひとつに返事はしません。なやみの相談は<a href="#/help">相談の窓口</a>へ。</p>
-    <div class="divider">
-      <h2>みんなのアイデア</h2>
-      <p class="small muted">区が紹介するアイデアを、これからここに載せる予定です。</p>
-    </div>
+    <p class="small muted">[送ったアイデアの扱い（区の確認後に記載）]</p>
+    <p class="small muted">なやみの相談は<a href="#/help">相談の窓口</a>へ。</p>
   </div>`;
 }
 
@@ -405,22 +389,13 @@ function renderHelp() {
   ];
   view.innerHTML = `<div class="help"><div class="wrap" style="display:flex;flex-direction:column;gap:14px;width:100%">
     <h1>${R('つらいとき・{相談|そうだん}したいとき')}</h1>
-    <p>${R('{居場所|いばしょ}がなくてつらい、だれかに{話|はなし}を{聞|き}いてほしい。そんなときは、ここに{連絡|れんらく}してみてね。')}</p>
+    <p>[案内の文（区の確認後に記載）]</p>
     ${lines.map(l => `<div class="help-card"><span class="label">${esc(l.label)}</span><span class="name">${esc(l.name)}</span><span class="small muted">${esc(l.hours)}</span>
       ${l.tel ? `<a class="btn primary" href="tel:${esc(l.tel)}">${esc(l.tel)} に電話する</a>` : ''}
       ${safeUrl(l.url) ? `<a class="btn outline" href="${esc(l.url)}" target="_blank" rel="noopener">窓口のページを開く ↗</a>` : ''}</div>`).join('')}
-    <p class="small muted">すぐに危ないときは 110番 か 119番 へ。</p>
+    <p class="small muted">[緊急のときの案内（区の確認後に記載）]</p>
   </div></div>`;
 }
-
-// ---------- ふりがな ----------
-const fBtn = document.getElementById('furigana');
-function applyFurigana() {
-  document.body.classList.toggle('furigana-on', state.furigana);
-  fBtn.setAttribute('aria-pressed', state.furigana);
-  fBtn.textContent = state.furigana ? 'ふりがな あり' : 'ふりがな';
-}
-fBtn.onclick = () => { state.furigana = !state.furigana; store.set('ibasho.furigana', state.furigana); applyFurigana(); };
 
 // ---------- 埋め込み元（Decidim）からリンク先を決める ----------
 // リポジトリにDecidimのドメインを書かないため、親ページ（referrer）のオリジンを使う。
@@ -459,7 +434,6 @@ async function resolveParent() {
   // Decidim側のページのメニューから来たとき：親ページのURLの ?tab= で最初の画面を決める
   const tab = ref ? ref.searchParams.get('tab') : '';
   if (!location.hash && ['chat', 'list', 'map', 'help'].includes(tab)) history.replaceState(null, '', `#/${tab}`);
-  applyFurigana();
   route();
 })();
 })();
