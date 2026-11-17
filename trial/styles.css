@@ -61,7 +61,6 @@ rt { font-size: .5em; }
 .kind-tile.calm { background: #f3edf8; color: #5e3a7d; } .kind-tile.learn { background: #f8ecf2; color: #85315b; }
 .kind-tile.food { background: #fbf0e6; color: #8a4510; grid-column: span 2; }
 .kind-tile.empty { opacity: .6; }
-.near-btn { width: 100%; height: 48px; border: 1.5px dashed #8fb3ae; background: #f6fbfa; color: var(--brand); border-radius: 12px; font-weight: 700; font-size: 14px; }
 .banner { display: block; border-radius: 16px; padding: 16px; text-decoration: none; margin-bottom: 10px; }
 .banner b { display: block; font-size: 16px; margin-bottom: 4px; } .banner span { font-size: 13px; line-height: 1.6; }
 .banner.idea { background: #fff7e0; color: #5b4300; } .banner.help { background: #eef1fb; color: #2b3a7a; }
@@ -123,7 +122,6 @@ rt { font-size: .5em; }
 .map-card .go { display: flex; align-items: center; justify-content: center; height: 40px; border-radius: 20px; background: var(--brand); color: #fff; font-weight: 700; font-size: 14px; text-decoration: none; margin-top: 6px; }
 .pin { border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
 .pin.on { outline: 3px solid var(--brand); }
-.me { width: 16px; height: 16px; border-radius: 50%; background: #1a73e8; border: 3px solid #fff; box-shadow: 0 0 0 8px rgba(26,115,232,.18); }
 
 /* 詳細 */
 .detail { padding: 14px 18px 24px; display: flex; flex-direction: column; gap: 14px; }

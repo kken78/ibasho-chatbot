@@ -50,19 +50,11 @@ function toast(text) {
   t.className = 'toast'; t.textContent = text; t.setAttribute('role', 'status');
   document.body.appendChild(t); setTimeout(() => t.remove(), 2200);
 }
-function distance(a, b) {
-  const r = Math.PI / 180, R0 = 6371000;
-  const dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
-  return 2 * R0 * Math.asin(Math.sqrt(h));
-}
-const fmtDist = m => m < 950 ? `約${Math.max(100, Math.round(m / 100) * 100)}m` : `約${(m / 1000).toFixed(1)}km`;
 
 // ---------- 状態 ----------
 const state = {
-  loc: null,
   saved: new Set(store.get('ibasho.saved', [])),
-  filter: { kind: '', area: '', teen: false, saved: false, q: '', sort: 'name', ids: null },
+  filter: { kind: '', area: '', teen: false, saved: false, q: '', ids: null },
   furigana: store.get('ibasho.furigana', false),
 };
 function toggleSave(id) {
@@ -70,16 +62,6 @@ function toggleSave(id) {
   else { state.saved.add(id); toast('ほぞんしたよ'); }
   store.set('ibasho.saved', [...state.saved]);
 }
-function locate() {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) { toast('この端末では位置が使えません'); return resolve(null); }
-    navigator.geolocation.getCurrentPosition(
-      pos => { state.loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }; resolve(state.loc); },
-      () => { toast('位置が使えませんでした'); resolve(null); },
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 });
-  });
-}
-const distOf = p => (state.loc && p.lat) ? distance(state.loc, p) : null;
 
 // ---------- 枠の外（Decidim）へのリンク ----------
 function outerLink(url, label, cls) {
@@ -91,13 +73,12 @@ function outerLink(url, label, cls) {
 // ---------- 共通部品 ----------
 const SAVE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
 function cardHtml(p, opts = {}) {
-  const d = distOf(p);
   const meta = [p.cat, p.teen ? '中高生も' : ''].filter(Boolean).join('・');
   return `<div class="card${opts.active ? ' active' : ''}" data-id="${p.id}">
     <a class="body" href="#/place/${p.id}">
       <span class="row"><span class="chip ${p.kind}">${esc(KINDS[p.kind].label)}</span>${esc(meta)}</span>
       <span class="name">${esc(p.name)}</span>
-      <span class="addr">${esc(p.shortAddr)}${d != null ? '・' + fmtDist(d) : ''}</span>
+      <span class="addr">${esc(p.shortAddr)}</span>
     </a>
     <button type="button" class="save-btn" data-save="${p.id}" aria-label="ほぞんする" aria-pressed="${state.saved.has(p.id)}">${SAVE_ICON}</button>
   </div>`;
@@ -122,7 +103,6 @@ function route() {
   const { page, arg, q } = parseHash();
   view.className = '';
   if (q.get('kind') !== null) { Object.assign(state.filter, { kind: q.get('kind'), ids: null }); }
-  if (q.get('sort') === 'near') state.filter.sort = 'near';
   const desk = DESKTOP.matches;
   if (page === 'chat') renderChat();
   else if (page === 'list' || page === 'map') (desk ? renderSplit() : page === 'list' ? renderList() : renderMap());
@@ -154,7 +134,7 @@ function renderTop() {
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" aria-hidden="true"><path d="M21 12a8 8 0 01-11.6 7.1L4 21l1.9-5.4A8 8 0 1121 12z"/></svg></a>
       <div class="two">
         <a class="sub" href="#/list?kind="><b>${R('{一覧|いちらん}で{見|み}る')}</b><small>しぼりこみ・検索</small></a>
-        <a class="sub" href="#/map?kind="><b>${R('{地図|ちず}で{見|み}る')}</b><small>近くをさがす</small></a>
+        <a class="sub" href="#/map?kind="><b>${R('{地図|ちず}で{見|み}る')}</b><small>地域から見つける</small></a>
       </div>
     </div>
     <section class="section">
@@ -163,11 +143,6 @@ function renderTop() {
         const n = countKind(k);
         return `<a class="kind-tile ${k}${n ? '' : ' empty'}" href="#/list?kind=${k}"><span class="k-label">${R(v.ruby)}</span><span>${n ? n : 'これから'}</span></a>`;
       }).join('')}</div>
-    </section>
-    <section class="section">
-      <h2>${R('{近|ちか}くの{居場所|いばしょ}')}</h2>
-      <button type="button" class="near-btn" id="near">今いる場所から見る</button>
-      <p class="small muted" style="margin:6px 0 0">位置は、この端末の中だけで使います。送られません。</p>
     </section>
     <section class="section">
       <a class="banner idea" href="#/idea"><b>${R('{居場所|いばしょ}のアイデア{箱|ばこ}')}</b><span>${R('「こんな{場所|ばしょ}があったらいいな」を{区|く}に{送|おく}ろう')}</span></a>
@@ -179,10 +154,6 @@ function renderTop() {
       <span>情報：世田谷区（試作のため、現行の52件を表示しています）。最新の状況は各施設にお問い合わせください。</span>
     </footer>
   </div>`;
-  view.querySelector('#near').onclick = async () => {
-    const loc = await locate();
-    if (loc) { state.filter.sort = 'near'; state.filter.kind = ''; location.hash = '#/list?sort=near'; }
-  };
 }
 
 // ---------- ② チャット ----------
@@ -235,27 +206,21 @@ function askKind(again) {
 function askWhere() {
   say('どのあたり？');
   ask([
-    { label: '今いる場所の近く', onClick: async () => {
-      const loc = await locate();
-      if (!loc) say('{位置|いち}が{使|つか}えなかったので、{区|く}{全体|ぜんたい}からさがすね。');
-      chat.ans.area = ''; chat.ans.near = !!loc; showResult();
-    } },
-    ...AREAS.map(a => ({ label: a, onClick: () => { chat.ans.area = a; chat.ans.near = false; showResult(); } })),
-    { label: 'どこでもいい', secondary: true, onClick: () => { chat.ans.area = ''; chat.ans.near = false; showResult(); } },
+    ...AREAS.map(a => ({ label: a, onClick: () => { chat.ans.area = a; showResult(); } })),
+    { label: 'どこでもいい', secondary: true, onClick: () => { chat.ans.area = ''; showResult(); } },
   ]);
 }
 function showResult() {
-  const { kind, area, age, near } = chat.ans;
+  const { kind, area, age } = chat.ans;
   let list = PLACES_V.filter(p => (!kind || p.kind === kind) && (!area || p.area === area));
   const score = p => (age && age.teen && p.teen ? 3 : 0) + (p.cat === '青少年交流センター' && age && age.teen ? 2 : 0);
-  if (near && state.loc) list.sort((a, b) => distOf(a) - distOf(b));
-  else list.sort((a, b) => score(b) - score(a));
+  list.sort((a, b) => score(b) - score(a));
   const top = list.slice(0, 5);
   if (!top.length) {
     say('ぴったりの{場所|ばしょ}が{見|み}つからなかった…{地域|ちいき}を{変|か}えてみる？');
     return ask([{ label: '地域を変える', onClick: askWhere }]);
   }
-  say(`${list.length}か{所|しょ}{見|み}つかったよ。${list.length > 5 ? '{近|ちか}い{順|じゅん}・おすすめ{順|じゅん}に5つ{出|だ}すね。' : ''}`);
+  say(`${list.length}か{所|しょ}{見|み}つかったよ。${list.length > 5 ? 'おすすめ{順|じゅん}に5つ{出|だ}すね。' : ''}`);
   chat.log.push({ type: 'cards', ids: top.map(p => p.id) });
   const ids = list.map(p => p.id);
   ask([
@@ -272,8 +237,7 @@ function filtered() {
     (!f.ids || f.ids.includes(p.id)) && (!f.kind || p.kind === f.kind) && (!f.area || p.area === f.area) &&
     (!f.teen || p.teen) && (!f.saved || state.saved.has(p.id)) &&
     (!f.q || (p.name + p.addr + p.cat).includes(f.q)));
-  if (f.sort === 'near' && state.loc) list.sort((a, b) => distOf(a) - distOf(b));
-  else list.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+  list.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
   return list;
 }
 function filtersHtml(withSearch) {
@@ -290,7 +254,7 @@ function filtersHtml(withSearch) {
     <div class="selects">
       <select id="area" aria-label="地域"><option value="">地域：すべて</option>${AREAS.map(a => `<option ${f.area === a ? 'selected' : ''}>${a}</option>`).join('')}</select>
       <span><b id="count"></b>件</span>
-      <select id="sort" aria-label="ならび順"><option value="name" ${f.sort === 'name' ? 'selected' : ''}>名前順</option><option value="near" ${f.sort === 'near' ? 'selected' : ''}>近い順</option></select>
+      <span class="small muted">名前順</span>
     </div>
   </div>`;
 }
@@ -301,10 +265,6 @@ function bindFilters(root, rerender) {
   const s = root.querySelector('[data-saved]'); if (s) s.onclick = () => { f.saved = !f.saved; rerender(); };
   const c = root.querySelector('[data-clear-ids]'); if (c) c.onclick = () => { f.ids = null; rerender(); };
   root.querySelector('#area').onchange = e => { f.area = e.target.value; rerender(); };
-  root.querySelector('#sort').onchange = async e => {
-    if (e.target.value === 'near' && !state.loc && !(await locate())) { e.target.value = 'name'; return; }
-    f.sort = e.target.value; rerender();
-  };
   const q = root.querySelector('#q');
   if (q) q.oninput = () => { f.q = q.value.trim(); drawListItems(root); };
 }
@@ -342,7 +302,6 @@ function buildMap(wrap, list, onPick) {
     m.on('click', () => onPick(p.id));
     markers.set(p.id, m);
   });
-  if (state.loc) L.marker([state.loc.lat, state.loc.lng], { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [16, 16] }), interactive: false }).addTo(map);
   const bounds = markers.size ? L.featureGroup([...markers.values()]).getBounds().pad(0.15) : null;
   const fit = () => bounds ? map.fitBounds(bounds) : map.setView([35.6466, 139.6532], 13);
   fit();
@@ -354,16 +313,11 @@ function buildMap(wrap, list, onPick) {
       const m = markers.get(id); if (m) map.panTo(m.getLatLng());
     },
   };
-  wrap.querySelector('[data-me]').onclick = async () => {
-    const loc = await locate();
-    if (loc) { map.setView([loc.lat, loc.lng], 15); L.marker([loc.lat, loc.lng], { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [16, 16] }), interactive: false }).addTo(map); }
-  };
   return api;
 }
 function mapWrapHtml(withListBtn) {
   return `<div class="map-wrap"><div class="map-canvas" role="region" aria-label="地図"></div>
     <div class="map-tools">
-      <button type="button" data-me aria-label="今いる場所へ"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
       ${withListBtn ? '<a href="#/list">一覧</a>' : ''}
     </div>
     <div class="map-card" hidden></div></div>`;
@@ -400,7 +354,6 @@ function renderSplit() {
 function renderDetail(id) {
   const p = byId(id);
   if (!p) { view.innerHTML = '<div class="wrap detail"><p>見つかりませんでした。</p><a class="back" href="#/list">一覧へ</a></div>'; return; }
-  const d = distOf(p);
   const url = safeUrl(p.url);
   view.innerHTML = `<div class="wrap detail">
     <a class="back" href="#/list" id="back">← もどる</a>
@@ -409,7 +362,7 @@ function renderDetail(id) {
     <p class="lead">${esc(p.desc)}</p>
     <dl>
       <dt>いつ</dt><dd>${url ? '開いている日・時間は施設のページで確認してね' : '開いている日・時間は施設にお問い合わせください'}</dd>
-      <dt>どこ</dt><dd>${esc(p.shortAddr)}（${esc(p.area)}）${d != null ? `<br><span class="small muted">今いる場所から${fmtDist(d)}</span>` : ''}</dd>
+      <dt>どこ</dt><dd>${esc(p.shortAddr)}（${esc(p.area)}）</dd>
       <dt>だれが</dt><dd>${p.teen ? '子ども・中高生' : '子ども'}</dd>
       <dt>いくら</dt><dd>${(p.tags || []).includes('無料') ? '無料' : '施設にお問い合わせください'}</dd>
       ${url ? `<dt>案内</dt><dd><a href="${esc(url)}" target="_blank" rel="noopener">施設のページ ↗</a></dd>` : ''}

@@ -8,7 +8,8 @@ Decidim側：検証用の Decidim 0.32 の取り組み（URLはリポジトリ�
   - `python3 trial/scripts/sync_from_decidim.py --api https://（DecidimのURL）/api --component （提案コンポーネントのID）`
   - 分類・地域・種別・特徴はタクソノミー（[検証]居場所の分類／地域／施設の種別／特徴）。案内URL・名称・施設IDは本文に記載
 - 画面：トップ／チャット／一覧／地図／詳細／アイデア箱／相談。横幅900px以上は一覧と地図の2列
-- ふりがな切り替え、現在地（近い順・距離）、ほぞん（端末内）、シェア
+- ふりがな切り替え、ほぞん（端末内）、シェア
+- 利用者の位置情報（現在地）は取得しない（仕様の合意による。近い順・距離・現在地ボタンは置かない）
 - 開く日・対象年代はデータにないため、その機能（次にひらく日、いつで絞り込み）は未実装
 - Decidim側のページ（アイデア箱・感想・掲載のお申し込みのアンケート）へのリンクは、埋め込み元のオリジン（`config.js` に SHA-256 で許可リスト）と iframe の src のクエリから組み立て、枠の外で開く
   - iframe の src の例：`https://kken78.github.io/ibasho-chatbot/trial/?space=processes/（スラッグ）&idea=（コンポーネントID）/（アンケートID）&feedback=…&apply=…`
