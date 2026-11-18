@@ -14,7 +14,7 @@ Decidim側：検証用の Decidim 0.32 の取り組み（URLはリポジトリ�
 - 利用者の位置情報（現在地）は取得しない。外部の経路検索へのリンクも置かない
 - 相談窓口とアイデア箱の案内文は [ ] の仮表示
 - 開く日・対象年代はデータにないため、その機能（次にひらく日、いつで絞り込み）は未実装
-- Decidim側のページ（アイデア箱・感想・掲載のお申し込みのアンケート）へのリンクは、埋め込み元のオリジン（`config.js` に SHA-256 で許可リスト）と iframe の src のクエリから組み立て、枠の外で開く
+- Decidim側のページ（アイデア箱・感想・掲載のお申し込みのアンケート）へのリンクは、埋め込み元のオリジン（referrer）と iframe の src のクエリから組み立て、枠の外で開く。単独で開いたときは出さない
   - iframe の src の例：`https://kken78.github.io/ibasho-chatbot/trial/?space=processes/（スラッグ）&idea=（コンポーネントID）/（アンケートID）&feedback=…&apply=…`
   - Decidimのドメインはリポジトリに書かない
 - `dev/embed-test/`：Awesome「カスタムスタイル」用CSS（awesome-scoped.css）と iframe のコード

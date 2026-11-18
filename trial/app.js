@@ -399,17 +399,17 @@ function renderHelp() {
 
 // ---------- 埋め込み元（Decidim）からリンク先を決める ----------
 // リポジトリにDecidimのドメインを書かないため、親ページ（referrer）のオリジンを使う。
-// 許可するオリジンは config.js に SHA-256 で持つ。取り組みのパスやアンケートの番号は iframe の src のクエリで渡す
+// 埋め込み元の制限は配信先のレスポンスヘッダー（frame-ancestors）で行い、ここでは判定しない。
+// 取り組みのパスやアンケートの番号は iframe の src のクエリで渡す
 //   例：.../trial/?space=processes/（スラッグ）&idea=（コンポーネント）/（アンケート）&feedback=…&apply=…
-async function sha256hex(s) {
-  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
-}
-async function resolveParent() {
+function resolveParent() {
+  if (window.top === window.self) return null; // 単独で開いたとき
   let ref;
   try { ref = new URL(document.referrer); } catch (e) { return null; }
-  if (ref.protocol !== 'https:' || !window.crypto || !crypto.subtle) return null;
-  if (!(CFG.parentOriginHashes || []).includes(await sha256hex(ref.origin))) return null;
+  if (ref.protocol !== 'https:') return null;
+  // 直接の親と referrer が食い違うときは使わない（ancestorOrigins がある環境のみ）
+  const anc = location.ancestorOrigins;
+  if (anc && anc.length && anc[0] !== ref.origin) return null;
   const q = new URLSearchParams(location.search);
   const lang = /^[a-z]{2}$/.test(q.get('lang') || '') ? q.get('lang') : 'ja';
   const space = q.get('space') || '';
@@ -425,7 +425,7 @@ async function resolveParent() {
 }
 
 (async function init() {
-  const ref = await resolveParent();
+  const ref = resolveParent();
   // ヘッダーの戻るリンク：埋め込み元の取り組みのページ（おとな向けの入口）へ。単独で開いたときは出さない
   const lpBack = document.getElementById('lp-back');
   if (lpBack && safeUrl(LINK.site)) { lpBack.href = LINK.site; lpBack.hidden = false; }
