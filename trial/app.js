@@ -142,8 +142,8 @@ const chat = { log: [], choices: null, ans: {}, started: false };
 const say = (text, who = 'bot') => chat.log.push({ type: 'msg', who, text });
 function ask(items) { chat.choices = items; drawChat(); }
 const AGES = [
-  { label: '小学生', teen: false }, { label: '中学生', teen: true }, { label: '高校生', teen: true },
-  { label: 'それより上', teen: true }, { label: '大人（保護者・支援者）', teen: false },
+  { label: '小学生', teen: false }, { label: '中学生', teen: true }, { label: '高校生世代', teen: true },
+  { label: '若者（18歳以上35歳未満）', teen: true }, { label: '大人（保護者・支援者）', teen: false },
 ];
 function renderChat() {
   if (!chat.started) {
